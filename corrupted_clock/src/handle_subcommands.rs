@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use corrupted_clock_util::{
     data_store,
-    timing::{ClockTable, CountDown, Stopwatch, TimeImpl as _, Timer as _, UtcTimeImpl},
+    timing::{ClockTable, CountDown, Stopwatch, Timer as _},
 };
 use log::warn;
 
@@ -16,6 +16,14 @@ use crate::{
 use self::not_found_clock_err::NotFoundClockErr;
 
 mod not_found_clock_err;
+
+pub fn clean(general_args: &AppCliArgs) -> AppResult {
+    let user_dir = path_utils::get_user_data_dir(general_args)?;
+    let app_state_file = path_utils::get_path_app_state_file(&user_dir);
+    let clean_state = ClockTable::default();
+    data_store::save_app_state(&app_state_file, &clean_state)?;
+    Ok(())
+}
 
 pub fn create(general_args: &AppCliArgs, args: &CreateCommand) -> AppResult {
     let LoadedAppStateFile {

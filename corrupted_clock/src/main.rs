@@ -45,5 +45,6 @@ fn subcommand(args: AppCliArgs) -> AppResult<Option<String>> {
         }
         AppSubCommands::List(list_args) => handle_subcommands::list(&args, list_args).map(Some),
         AppSubCommands::Get(get_args) => handle_subcommands::get_clock(&args, &get_args).map(Some),
+        AppSubCommands::Clean => handle_subcommands::clean(&args).map(|_| None),
     }
 }

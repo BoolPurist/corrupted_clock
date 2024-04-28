@@ -53,4 +53,5 @@ pub enum AppSubCommands {
     Resume(ClockReference),
     Pause(ClockReference),
     Reset(ClockReference),
+    Clean,
 }
