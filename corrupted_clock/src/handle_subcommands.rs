@@ -27,8 +27,8 @@ pub fn create(general_args: &AppCliArgs, args: &CreateCommand) -> AppResult {
         .name()
         .map(|ref_str| ref_str.to_string())
         .unwrap_or_else(|| {
-            let utc_now = UtcTimeImpl::default().now();
-            corrupted_clock_util::chrono_time_to_str(utc_now)
+            let now = corrupted_clock_util::local_now();
+            corrupted_clock_util::chrono_time_to_str(now)
         });
     match args.to_count_down() {
         Some(count_down) => app_state.add_count_down(name, CountDown::new(count_down))?,
@@ -37,6 +37,7 @@ pub fn create(general_args: &AppCliArgs, args: &CreateCommand) -> AppResult {
     data_store::save_app_state(&path_to_app_file, &app_state)?;
     Ok(())
 }
+
 pub fn resume(general_args: &AppCliArgs, args: &ClockReference) -> AppResult {
     handle_modify_with_save(
         general_args,
@@ -45,6 +46,7 @@ pub fn resume(general_args: &AppCliArgs, args: &ClockReference) -> AppResult {
         |app_state, name| app_state.modify_count_down(name).unwrap().resume(),
     )
 }
+
 pub fn reset(general_args: &AppCliArgs, args: &ClockReference) -> AppResult {
     handle_modify_with_save(
         general_args,
@@ -53,6 +55,7 @@ pub fn reset(general_args: &AppCliArgs, args: &ClockReference) -> AppResult {
         |app_state, name| app_state.modify_count_down(name).unwrap().reset(),
     )
 }
+
 pub fn pause(general_args: &AppCliArgs, args: &ClockReference) -> AppResult {
     handle_modify_with_save(
         general_args,

@@ -43,9 +43,10 @@ pub fn stop_watch_rows<'a>(
 }
 
 fn basic_fields<'a>((name, stop_watch): (&'a str, &'a impl Timer)) -> impl Iterator<Item = String> {
+    let local_create_at = corrupted_clock_util::convert_utc_to_local(stop_watch.created_at());
     [
         name.to_string(),
-        stop_watch.created_at().to_string(),
+        local_create_at.to_string(),
         stop_watch.is_paused().to_string(),
         stop_watch.passed().to_string(),
         stop_watch.paused_time().to_string(),
