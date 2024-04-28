@@ -1,0 +1,12 @@
+[workspace]
+
+resolver = "2"
+
+members = [
+    "corrupted_clock",
+    "corrupted_clock_util"
+]
+
+[workspace.dependencies]
+serde_json = "1.0.116"
+thiserror = "1.0.59"

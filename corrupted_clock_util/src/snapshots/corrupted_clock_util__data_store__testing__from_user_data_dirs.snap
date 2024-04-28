@@ -1,0 +1,7 @@
+---
+source: corrupted_clock_util/src/data_store.rs
+expression: actual
+---
+Ok(
+    "/home/some_user/corrupted_clock",
+)

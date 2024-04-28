@@ -1,0 +1,10 @@
+---
+source: corrupted_clock_util/src/data_store.rs
+expression: actual
+---
+Err(
+    Custom {
+        kind: Other,
+        error: "No location found for saving the app state",
+    },
+)
