@@ -48,11 +48,25 @@ impl AppCliArgs {
 
 #[derive(Debug, Subcommand)]
 pub enum AppSubCommands {
+    /// alias: c
+    #[command(alias = "c")]
     Create(CreateCommand),
+    /// alias: g
+    #[command(alias = "g")]
     Get(GetClockArgs),
+    /// alias: l
+    #[command(alias = "l")]
     List(ListArgs),
+    /// alias: d
+    #[command(alias = "d")]
     Delete(ExistingClockReference),
+    /// alias: r
+    #[command(alias = "r")]
     Resume(ExistingClockReference),
+    /// alias: p
+    #[command(alias = "p")]
     Pause(ExistingClockReference),
+    /// alias: rs
+    #[command(alias = "rs")]
     Reset(ExistingClockReference),
 }
