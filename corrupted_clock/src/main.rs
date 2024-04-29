@@ -32,19 +32,18 @@ fn subcommand(args: AppCliArgs) -> AppResult<Option<String>> {
             Ok(None)
         }
         AppSubCommands::Delete(delete_args) => {
-            handle_subcommands::delete(&args, delete_args).map(|_| None)
+            handle_subcommands::delete(&args, delete_args.kind_reference()?).map(|_| None)
         }
         AppSubCommands::Resume(clock_ref) => {
-            handle_subcommands::resume(&args, &clock_ref).map(|_| None)
+            handle_subcommands::resume(&args, &clock_ref.kind_reference()?).map(|_| None)
         }
         AppSubCommands::Pause(clock_ref) => {
-            handle_subcommands::pause(&args, &clock_ref).map(|_| None)
+            handle_subcommands::pause(&args, &clock_ref.kind_reference()?).map(|_| None)
         }
         AppSubCommands::Reset(clock_ref) => {
-            handle_subcommands::reset(&args, &clock_ref).map(|_| None)
+            handle_subcommands::reset(&args, &clock_ref.kind_reference()?).map(|_| None)
         }
         AppSubCommands::List(list_args) => handle_subcommands::list(&args, list_args).map(Some),
         AppSubCommands::Get(get_args) => handle_subcommands::get_clock(&args, &get_args).map(Some),
-        AppSubCommands::Clean => handle_subcommands::clean(&args).map(|_| None),
     }
 }

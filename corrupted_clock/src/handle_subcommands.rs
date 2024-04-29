@@ -4,11 +4,12 @@ use corrupted_clock_util::{
     data_store,
     timing::{ClockTable, CountDown, Stopwatch, Timer as _},
 };
-use log::warn;
+use log::{info, warn};
 
 use crate::{
     cli_args::{
-        AppCliArgs, ClockKind, ClockReference, CreateCommand, DeleteArgs, GetClockArgs, ListArgs,
+        AppCliArgs, ClockKind, CreateCommand, ExistingClockKindReference, GetClockArgs, ListArgs,
+        ManyClockReferenceKind,
     },
     path_utils, table_drawing, AppResult,
 };
@@ -16,14 +17,6 @@ use crate::{
 use self::not_found_clock_err::NotFoundClockErr;
 
 mod not_found_clock_err;
-
-pub fn clean(general_args: &AppCliArgs) -> AppResult {
-    let user_dir = path_utils::get_user_data_dir(general_args)?;
-    let app_state_file = path_utils::get_path_app_state_file(&user_dir);
-    let clean_state = ClockTable::default();
-    data_store::save_app_state(&app_state_file, &clean_state)?;
-    Ok(())
-}
 
 pub fn create(general_args: &AppCliArgs, args: &CreateCommand) -> AppResult {
     let LoadedAppStateFile {
@@ -36,50 +29,87 @@ pub fn create(general_args: &AppCliArgs, args: &CreateCommand) -> AppResult {
         .map(|ref_str| ref_str.to_string())
         .unwrap_or_else(|| {
             let now = corrupted_clock_util::local_now();
-            corrupted_clock_util::chrono_time_to_str(now)
+            let name = corrupted_clock_util::chrono_time_to_str(now);
+            info!(
+                "Name of clock item is '{}' since no name was provided",
+                &name
+            );
+            name
         });
     match args.to_count_down() {
-        Some(count_down) => app_state.add_count_down(name, CountDown::new(count_down))?,
-        None => app_state.add_stopwatch(name, Stopwatch::new())?,
+        Some(count_down) => {
+            info!("Stopwatch under the name '{}' is created", name);
+            app_state.add_count_down(name, CountDown::new(count_down))?;
+        }
+        None => {
+            info!("Count down under the name '{}' is created", name);
+            app_state.add_stopwatch(name, Stopwatch::new())?
+        }
     };
+
     data_store::save_app_state(&path_to_app_file, &app_state)?;
     Ok(())
 }
 
-pub fn resume(general_args: &AppCliArgs, args: &ClockReference) -> AppResult {
-    handle_modify_with_save(
-        general_args,
-        args,
-        |app_state, name| app_state.modify_stopwatch(name).unwrap().resume(),
-        |app_state, name| app_state.modify_count_down(name).unwrap().resume(),
-    )
+pub fn resume(general_args: &AppCliArgs, args: &ExistingClockKindReference) -> AppResult {
+    handle_modify_with_save(general_args, args, |sw| sw.resume(), |sw| sw.resume())
 }
 
-pub fn reset(general_args: &AppCliArgs, args: &ClockReference) -> AppResult {
-    handle_modify_with_save(
-        general_args,
-        args,
-        |app_state, name| app_state.modify_stopwatch(name).unwrap().reset(),
-        |app_state, name| app_state.modify_count_down(name).unwrap().reset(),
-    )
+pub fn reset(general_args: &AppCliArgs, args: &ExistingClockKindReference) -> AppResult {
+    handle_modify_with_save(general_args, args, |sw| sw.reset(), |cd| cd.reset())
 }
 
-pub fn pause(general_args: &AppCliArgs, args: &ClockReference) -> AppResult {
-    handle_modify_with_save(
-        general_args,
-        args,
-        |app_state, name| app_state.modify_stopwatch(name).unwrap().pause(),
-        |app_state, name| app_state.modify_count_down(name).unwrap().pause(),
-    )
+pub fn pause(general_args: &AppCliArgs, args: &ExistingClockKindReference) -> AppResult {
+    handle_modify_with_save(general_args, args, |sw| sw.pause(), |cd| cd.pause())
 }
 
-pub fn delete(general_args: &AppCliArgs, args: &DeleteArgs) -> AppResult {
-    handle_modify_with_save(
-        general_args,
-        args.reference(),
-        |app_state, name| _ = app_state.remove_stopwatch(name),
-        |app_state, name| _ = app_state.remove_count_down(name),
-    )
+pub fn delete(general_args: &AppCliArgs, args: ExistingClockKindReference) -> AppResult {
+    let LoadedAppStateFile {
+        mut app_state,
+        path_to_app_file,
+    } = load_app_state(general_args)?;
+    match args {
+        ExistingClockKindReference::All(kind) => {
+            let (remove_sws, remove_cds) = match kind {
+                ManyClockReferenceKind::All => (true, true),
+                ManyClockReferenceKind::Stopwatch => (true, false),
+                ManyClockReferenceKind::CountDown => (false, true),
+            };
+            if remove_sws {
+                app_state.remove_all_stopwatches();
+                info!("All stop watches were removed");
+            }
+            if remove_cds {
+                app_state.remove_all_count_donws();
+                info!("All count downs were removed");
+            }
+        }
+        ExistingClockKindReference::Single(single) => {
+            let name = single.name();
+            let kind = single.kind();
+            match kind {
+                ClockKind::StopWatch => {
+                    if !app_state.has_stop_watch(name) {
+                        return Err(NotFoundClockErr::new(name.to_owned(), kind).into());
+                    } else {
+                        app_state.remove_stopwatch(name);
+                        info!("Stop watch under the name '{}' was removed", name);
+                    }
+                }
+                ClockKind::CountDown => {
+                    if !app_state.has_count_down(name) {
+                        return Err(NotFoundClockErr::new(name.to_owned(), kind).into());
+                    } else {
+                        app_state.remove_count_down(name);
+                        info!("Count down under the name '{}' was removed", name);
+                    }
+                }
+            }
+        }
+    }
+
+    data_store::save_app_state(&path_to_app_file, &app_state)?;
+    Ok(())
 }
 
 pub fn list(general_args: &AppCliArgs, args: &ListArgs) -> AppResult<String> {
@@ -169,31 +199,64 @@ fn load_app_state(general_args: &AppCliArgs) -> AppResult<LoadedAppStateFile> {
 
 fn handle_modify_with_save(
     general_args: &AppCliArgs,
-    reference: &ClockReference,
-    on_stopwatch: impl FnOnce(&mut ClockTable, &str),
-    on_count_down: impl FnOnce(&mut ClockTable, &str),
+    reference: &ExistingClockKindReference,
+    mut on_stopwatch: impl FnMut(&mut Stopwatch),
+    mut on_count_down: impl FnMut(&mut CountDown),
 ) -> AppResult {
     let LoadedAppStateFile {
         mut app_state,
         path_to_app_file,
     } = load_app_state(general_args)?;
-    let name = reference.name();
-    match reference.kind() {
-        ClockKind::StopWatch => {
-            if app_state.has_stop_watch(name) {
-                on_stopwatch(&mut app_state, name);
-            } else {
-                return Err(NotFoundClockErr::new(name.to_owned(), reference.kind()).into());
+    match reference {
+        ExistingClockKindReference::All(kind) => {
+            let (on_sws, on_cds) = match kind {
+                ManyClockReferenceKind::All => (true, true),
+                ManyClockReferenceKind::Stopwatch => (true, false),
+                ManyClockReferenceKind::CountDown => (false, true),
+            };
+            if on_sws {
+                for stopwatch in app_state.mut_all_stop_watches() {
+                    on_stopwatch(stopwatch);
+                }
+                info!("Modification was done on all stop watches");
+            }
+            if on_cds {
+                for count_down in app_state.mut_all_count_downs() {
+                    on_count_down(count_down);
+                }
+                info!("Modification was done on all count downs");
             }
         }
-        ClockKind::CountDown => {
-            if app_state.has_count_down(name) {
-                on_count_down(&mut app_state, name);
-            } else {
-                return Err(NotFoundClockErr::new(name.to_owned(), reference.kind()).into());
+        ExistingClockKindReference::Single(reference) => {
+            let name = reference.name();
+            match reference.kind() {
+                ClockKind::StopWatch => match app_state.mut_stopwatch(name) {
+                    Some(sw) => {
+                        info!(
+                            "Modification was done on the stop watch with name `{}`",
+                            name
+                        );
+                        on_stopwatch(sw)
+                    }
+                    None => {
+                        return Err(NotFoundClockErr::new(name.to_owned(), reference.kind()).into())
+                    }
+                },
+                ClockKind::CountDown => match app_state.mut_count_down(name) {
+                    Some(sw) => {
+                        info!(
+                            "Modification was done on the count down with name `{}`",
+                            name
+                        );
+                        on_count_down(sw)
+                    }
+                    None => {
+                        return Err(NotFoundClockErr::new(name.to_owned(), reference.kind()).into())
+                    }
+                },
             }
         }
-    };
+    }
 
     data_store::save_app_state(&path_to_app_file, &app_state)?;
     Ok(())

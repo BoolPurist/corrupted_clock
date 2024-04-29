@@ -1,13 +1,15 @@
 use clap::{Args, ValueEnum};
 
+use crate::constants;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum, Default)]
 pub enum ClockKind {
     /// alias: sw
-    #[value(alias("sw"))]
+    #[value(alias(constants::STOP_WATCH_ALIASE))]
     #[default]
     StopWatch,
     /// alias: cd
-    #[value(alias("cd"))]
+    #[value(alias(constants::COUNT_DOWN_ALIASE))]
     CountDown,
 }
 

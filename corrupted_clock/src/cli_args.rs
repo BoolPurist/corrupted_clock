@@ -6,16 +6,18 @@ use clap::{Parser, Subcommand};
 mod clock_kind;
 mod clock_reference;
 mod create_command;
-mod delete_args;
+mod existing_clock_reference;
 mod get_clock_args;
 mod list_args;
+mod many_clock_reference_kind;
 
 pub use clock_kind::{ClockKind, ClockKindArg};
 pub use clock_reference::ClockReference;
 pub use create_command::CreateCommand;
-pub use delete_args::DeleteArgs;
+pub use existing_clock_reference::{ExistingClockKindReference, ExistingClockReference};
 pub use get_clock_args::GetClockArgs;
 pub use list_args::ListArgs;
+pub use many_clock_reference_kind::ManyClockReferenceKind;
 
 #[derive(Debug, Parser)]
 #[command(version, about, long_about = None)]
@@ -49,9 +51,8 @@ pub enum AppSubCommands {
     Create(CreateCommand),
     Get(GetClockArgs),
     List(ListArgs),
-    Delete(DeleteArgs),
-    Resume(ClockReference),
-    Pause(ClockReference),
-    Reset(ClockReference),
-    Clean,
+    Delete(ExistingClockReference),
+    Resume(ExistingClockReference),
+    Pause(ExistingClockReference),
+    Reset(ExistingClockReference),
 }

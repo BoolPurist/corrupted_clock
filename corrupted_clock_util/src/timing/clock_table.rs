@@ -28,8 +28,28 @@ impl ClockTable {
             .map(|(key, value)| (key.as_str(), value))
     }
 
+    pub fn mut_all_count_downs(&mut self) -> impl Iterator<Item = &mut CountDown> {
+        self.count_downs.values_mut().into_iter()
+    }
+
+    pub fn mut_all_stop_watches(&mut self) -> impl Iterator<Item = &mut Stopwatch> {
+        self.stopwatches.values_mut().into_iter()
+    }
+
     pub fn remove_count_down(&mut self, key: &str) -> bool {
         self.count_downs.remove(key).is_some()
+    }
+
+    pub fn remove_stopwatch(&mut self, key: &str) -> bool {
+        self.stopwatches.remove(key).is_some()
+    }
+
+    pub fn remove_all_stopwatches(&mut self) {
+        self.stopwatches = Default::default();
+    }
+
+    pub fn remove_all_count_donws(&mut self) {
+        self.count_downs = Default::default();
     }
 
     pub fn has_stop_watch(&self, key: &str) -> bool {
@@ -40,15 +60,19 @@ impl ClockTable {
         self.count_downs.contains_key(key)
     }
 
-    pub fn remove_stopwatch(&mut self, key: &str) -> bool {
-        self.stopwatches.remove(key).is_some()
-    }
-
     pub fn modify_stopwatch(&mut self, key: &str) -> Option<&mut Stopwatch> {
         self.stopwatches.get_mut(key)
     }
 
     pub fn modify_count_down(&mut self, key: &str) -> Option<&mut CountDown> {
+        self.count_downs.get_mut(key)
+    }
+
+    pub fn mut_stopwatch(&mut self, key: &str) -> Option<&mut Stopwatch> {
+        self.stopwatches.get_mut(key)
+    }
+
+    pub fn mut_count_down(&mut self, key: &str) -> Option<&mut CountDown> {
         self.count_downs.get_mut(key)
     }
 
