@@ -1,3 +1,5 @@
+mod not_found_clock_err;
+
 use std::path::PathBuf;
 
 use corrupted_clock_util::{
@@ -15,8 +17,6 @@ use crate::{
 };
 
 use self::not_found_clock_err::NotFoundClockErr;
-
-mod not_found_clock_err;
 
 pub fn create(general_args: &AppCliArgs, args: &CreateCommand) -> AppResult {
     let LoadedAppStateFile {

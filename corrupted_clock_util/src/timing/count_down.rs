@@ -80,6 +80,10 @@ impl CountDown<UtcTimeImpl> {
         let stopwatch = Stopwatch::new();
         Self { stopwatch, time }
     }
+
+    pub fn count_down_time(&self) -> ClockDuration {
+        self.time
+    }
 }
 
 #[cfg(test)]
