@@ -1,6 +1,6 @@
+pub use clock_duration::ClockDuration;
 pub use clock_table::ClockTable;
 pub use count_down::CountDown;
-pub use passed_time::ClockDuration;
 use serde::{Deserialize, Serialize};
 pub use stopwatch::Stopwatch;
 
@@ -9,9 +9,9 @@ pub mod mocking_time;
 #[cfg(test)]
 pub mod test_utils;
 
+mod clock_duration;
 mod clock_table;
 mod count_down;
-mod passed_time;
 mod stopwatch;
 
 pub type UtcDateTime = DateTime<Utc>;

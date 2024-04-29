@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- User can now provide durations for a count down in 3 forms
+  - Only seconds
+  - Only seconds and minutes
+  - With seconds, minutes and hours
+
 ## [0.2.0] - 2024-04-29 
 
 - Minimal viable product
