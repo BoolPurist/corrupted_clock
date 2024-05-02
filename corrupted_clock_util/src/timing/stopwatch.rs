@@ -7,9 +7,10 @@ pub struct Stopwatch<T = UtcTimeImpl>
 where
     T: Default,
 {
+    created_at: UtcDateTime,
     start_moment: UtcDateTime,
-    last_resume_moment: Option<UtcDateTime>,
     last_paused_at: Option<UtcDateTime>,
+    last_resume_moment: Option<UtcDateTime>,
     is_paused: bool,
     paused_time: ClockDuration,
     passed_time_between_pauses: ClockDuration,
@@ -24,19 +25,8 @@ impl Stopwatch<UtcTimeImpl> {
 }
 impl<T> Stopwatch<T>
 where
-    T: Default,
+    T: TimeImpl + Default,
 {
-    pub fn start_moment(&self) -> UtcDateTime {
-        self.start_moment
-    }
-
-    pub fn last_paused_at(&self) -> Option<UtcDateTime> {
-        self.last_paused_at
-    }
-    pub fn last_resumed_at(&self) -> Option<UtcDateTime> {
-        self.last_resume_moment
-    }
-
     fn resume_moment(&self) -> UtcDateTime {
         self.last_resumed_at().unwrap_or(self.start_moment)
     }
@@ -50,6 +40,9 @@ impl<T> Timer for Stopwatch<T>
 where
     T: TimeImpl + Default,
 {
+    fn start_moment(&self) -> UtcDateTime {
+        self.start_moment
+    }
     fn passed(&self) -> ClockDuration {
         if self.is_paused() {
             self.passed_time_between_pauses
@@ -108,6 +101,13 @@ where
         };
         self.paused_time + current_pause_delta
     }
+
+    fn last_paused_at(&self) -> Option<UtcDateTime> {
+        self.last_paused_at
+    }
+    fn last_resumed_at(&self) -> Option<UtcDateTime> {
+        self.last_resume_moment
+    }
 }
 
 impl<T> Stopwatch<T>
@@ -120,10 +120,11 @@ where
     }
 
     pub fn new_with_impl_and_start_date(time_impl: T, date: UtcDateTime) -> Self {
-        let start_moment = date;
+        let created_at = date;
         let paused_time = Default::default();
         Self {
-            start_moment,
+            created_at,
+            start_moment: created_at,
             paused_time,
             passed_time_between_pauses: paused_time,
             time_impl,

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Now paused time should be shown calculated correctly.
+
+### Added
+
+- Showing started at, last paused at and last resumed at for stopwatch/count down in the table 
+
+
 ### Added
 
 - User can now provide durations for a count down in 3 forms

@@ -23,6 +23,9 @@ pub struct UtcTimeImpl;
 
 pub trait Timer {
     fn created_at(&self) -> UtcDateTime;
+    fn start_moment(&self) -> UtcDateTime;
+    fn last_resumed_at(&self) -> Option<UtcDateTime>;
+    fn last_paused_at(&self) -> Option<UtcDateTime>;
     fn passed(&self) -> ClockDuration;
     fn paused_time(&self) -> ClockDuration;
     fn is_paused(&self) -> bool;

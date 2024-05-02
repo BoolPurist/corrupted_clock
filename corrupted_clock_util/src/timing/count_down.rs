@@ -86,6 +86,18 @@ where
     fn paused_time(&self) -> ClockDuration {
         self.stopwatch().paused_time()
     }
+
+    fn last_resumed_at(&self) -> Option<super::UtcDateTime> {
+        self.stopwatch.last_resumed_at()
+    }
+
+    fn last_paused_at(&self) -> Option<super::UtcDateTime> {
+        self.stopwatch.last_paused_at()
+    }
+
+    fn start_moment(&self) -> super::UtcDateTime {
+        self.stopwatch.start_moment()
+    }
 }
 
 #[cfg(test)]

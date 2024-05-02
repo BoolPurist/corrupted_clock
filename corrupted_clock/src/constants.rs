@@ -10,3 +10,4 @@ pub use env_var_prefix;
 pub const STOP_WATCH_ALIASE: &str = "sw";
 pub const COUNT_DOWN_ALIASE: &str = "cd";
 pub const ALL_CLOCK_ALIASE: &str = "a";
+pub const NOT_AVIABLE_TXT: &str = "N/A";
