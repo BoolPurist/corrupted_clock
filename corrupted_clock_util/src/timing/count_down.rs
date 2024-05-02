@@ -11,7 +11,10 @@ where
     time: ClockDuration,
 }
 
-impl std::fmt::Debug for CountDown {
+impl<T> std::fmt::Debug for CountDown<T>
+where
+    T: Default,
+{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("CountDown")
             .field("stopwatch", &self.stopwatch)
@@ -20,10 +23,20 @@ impl std::fmt::Debug for CountDown {
     }
 }
 
+impl CountDown {
+    pub fn new(time: ClockDuration) -> Self {
+        let stopwatch: Stopwatch = Stopwatch::new();
+        Self { stopwatch, time }
+    }
+}
+
 impl<T> CountDown<T>
 where
     T: TimeImpl + Default,
 {
+    pub fn count_down_time(&self) -> ClockDuration {
+        self.time
+    }
     pub fn new_with_impl(time_impl: T, time: ClockDuration) -> Self {
         let stopwatch = Stopwatch::new_with_impl(time_impl);
         Self { stopwatch, time }
@@ -75,23 +88,12 @@ where
     }
 }
 
-impl CountDown<UtcTimeImpl> {
-    pub fn new(time: ClockDuration) -> Self {
-        let stopwatch = Stopwatch::new();
-        Self { stopwatch, time }
-    }
-
-    pub fn count_down_time(&self) -> ClockDuration {
-        self.time
-    }
-}
-
 #[cfg(test)]
 mod testing {
     use chrono::TimeDelta;
 
     use crate::timing::{
-        mocking_time::{MockNowTimeAccessor, MockTimeImpl},
+        mocking_time::MockTimeImpl,
         test_utils::{add_to_now, new_utc_moment},
     };
 
@@ -100,9 +102,12 @@ mod testing {
     fn set_up_counte_mock(
         input: &str,
         duration: ClockDuration,
-    ) -> (CountDown<MockTimeImpl>, MockNowTimeAccessor) {
-        let (time_impl, accessor) = MockTimeImpl::new(new_utc_moment(input));
-        (CountDown::new_with_impl(time_impl, duration), accessor)
+    ) -> (CountDown<MockTimeImpl>, MockTimeImpl) {
+        let time_impl = MockTimeImpl::new(new_utc_moment(input));
+        (
+            CountDown::new_with_impl(time_impl.clone(), duration),
+            time_impl,
+        )
     }
 
     fn assert_left_time(count_down: &CountDown<MockTimeImpl>, expected: ClockDuration) {

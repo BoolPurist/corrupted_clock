@@ -4,7 +4,6 @@ pub use count_down::CountDown;
 use serde::{Deserialize, Serialize};
 pub use stopwatch::Stopwatch;
 
-#[cfg(test)]
 pub mod mocking_time;
 #[cfg(test)]
 pub mod test_utils;

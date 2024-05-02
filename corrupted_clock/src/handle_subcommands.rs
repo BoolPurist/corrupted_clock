@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use corrupted_clock_util::{
     data_store,
-    timing::{ClockTable, CountDown, Stopwatch, Timer as _},
+    timing::{ClockTable, CountDown, Stopwatch, TimeImpl, Timer as _},
 };
 use log::{info, warn};
 
@@ -115,42 +115,7 @@ pub fn delete(general_args: &AppCliArgs, args: ExistingClockKindReference) -> Ap
 pub fn list(general_args: &AppCliArgs, args: &ListArgs) -> AppResult<String> {
     let LoadedAppStateFile { app_state, .. } = load_app_state(general_args)?;
 
-    let (does_stopwatches, does_count_downs) = match args.kind() {
-        Some(ClockKind::CountDown) => (false, true),
-        Some(ClockKind::StopWatch) => (true, false),
-        None => (true, true),
-    };
-    let mut output = String::default();
-
-    if does_stopwatches {
-        let stop_watches = {
-            let mut to_sort: Vec<_> = app_state.all_stopwatches().collect();
-            to_sort.sort_by(|(l_key, _), (r_key, _)| l_key.cmp(&r_key));
-            to_sort
-        };
-        let sw_table = table_drawing::stop_watch_rows(stop_watches).to_string();
-        let to_push = format!(
-            "Stopwatches\n\
-            {}\n",
-            sw_table
-        );
-        output.push_str(&to_push);
-    }
-    if does_count_downs {
-        let count_downs = {
-            let mut to_sort: Vec<_> = app_state.all_count_downs().collect();
-            to_sort.sort_by(|(l_key, _), (r_key, _)| l_key.cmp(&r_key));
-            to_sort
-        };
-        let cd_table = table_drawing::count_down_rows(count_downs).to_string();
-        let to_push = format!(
-            "Countdowns\n\
-            {}\n",
-            cd_table
-        );
-        output.push_str(&to_push);
-    }
-
+    let output = draw_tables_of_cds_sws(&app_state, args.kind());
     Ok(output)
 }
 
@@ -260,4 +225,94 @@ fn handle_modify_with_save(
 
     data_store::save_app_state(&path_to_app_file, &app_state)?;
     Ok(())
+}
+
+fn draw_tables_of_cds_sws<T>(app_state: &ClockTable<T>, clock_kind: Option<ClockKind>) -> String
+where
+    T: Default + TimeImpl,
+{
+    let (does_stopwatches, does_count_downs) = match clock_kind {
+        Some(ClockKind::CountDown) => (false, true),
+        Some(ClockKind::StopWatch) => (true, false),
+        None => (true, true),
+    };
+    let mut output = String::default();
+
+    if does_stopwatches {
+        let stop_watches = {
+            let mut to_sort: Vec<_> = app_state.all_stopwatches().collect();
+            to_sort.sort_by(|(l_key, _), (r_key, _)| l_key.cmp(&r_key));
+            to_sort
+        };
+        let sw_table = table_drawing::stop_watch_rows(stop_watches).to_string();
+        let to_push = format!(
+            "Stopwatches\n\
+            {}\n",
+            sw_table
+        );
+        output.push_str(&to_push);
+    }
+    if does_count_downs {
+        let count_downs = {
+            let mut to_sort: Vec<_> = app_state.all_count_downs().collect();
+            to_sort.sort_by(|(l_key, _), (r_key, _)| l_key.cmp(&r_key));
+            to_sort
+        };
+        let cd_table = table_drawing::count_down_rows(count_downs).to_string();
+        let to_push = format!(
+            "Countdowns\n\
+            {}\n",
+            cd_table
+        );
+        output.push_str(&to_push);
+    }
+
+    output
+}
+
+#[cfg(test)]
+mod testing {
+    use std::collections::HashMap;
+
+    use chrono::{TimeDelta, TimeZone, Utc};
+    use corrupted_clock_util::timing::{
+        mocking_time::MockTimeImpl, ClockTable, CountDown, Stopwatch, Timer as _,
+    };
+
+    use crate::{cli_args::ClockKind, handle_subcommands::draw_tables_of_cds_sws};
+
+    #[test]
+    fn draw_tables_for_list_subcommand() {
+        fn assert_case(
+            case_name: &str,
+            clock_kind: Option<ClockKind>,
+            input: ClockTable<MockTimeImpl>,
+        ) {
+            let actual = draw_tables_of_cds_sws(&input, clock_kind);
+            insta::assert_snapshot!(case_name, actual);
+        }
+
+        assert_case(
+            "Drawing table from no stopwatches or count downs",
+            None,
+            ClockTable::default(),
+        );
+        let time = MockTimeImpl::new(Utc.with_ymd_and_hms(2024, 5, 1, 8, 20, 40).unwrap());
+        let unpaused_sw = (
+            "Stopwatch on the first day".to_string(),
+            Stopwatch::new_with_impl(time.clone()),
+        );
+        time.add_to_now(TimeDelta::days(1));
+        let mut paused_sw = (
+            "Stopwatch on the second day and paused after one day".to_string(),
+            Stopwatch::new_with_impl(time.clone()),
+        );
+        time.add_to_now(TimeDelta::days(1));
+        paused_sw.1.pause();
+        time.add_to_now(TimeDelta::hours(3));
+        let stopwatches: HashMap<String, Stopwatch<MockTimeImpl>> = [unpaused_sw, paused_sw].into();
+        let count_downs: HashMap<String, CountDown<MockTimeImpl>> = Default::default();
+        let data: ClockTable<MockTimeImpl> = ClockTable::new(stopwatches, count_downs);
+        assert_case("Drawing table from stopwatches or count downs", None, data);
+    }
 }

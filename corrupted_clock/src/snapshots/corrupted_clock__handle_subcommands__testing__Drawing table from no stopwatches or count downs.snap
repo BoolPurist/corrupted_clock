@@ -1,0 +1,13 @@
+---
+source: corrupted_clock/src/handle_subcommands.rs
+expression: actual
+---
+Stopwatches
++------+------------+-----------+-------------+-------------+
+| Name | Created at | Is paused | Passed Time | Paused Time |
++------+------------+-----------+-------------+-------------+
+
+Countdowns
++------+------------+-----------+-------------+-------------+------------+-----------+
+| Name | Created at | Is paused | Passed Time | Paused Time | Count down | Left Time |
++------+------------+-----------+-------------+-------------+------------+-----------+

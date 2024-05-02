@@ -10,3 +10,5 @@ members = [
 [workspace.dependencies]
 serde_json = "1.0.116"
 thiserror = "1.0.59"
+chrono = { version = "0.4.38", features = ["serde"] } 
+insta = { version = "1.38.0", features = ["json"] }
