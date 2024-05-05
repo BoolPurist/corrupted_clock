@@ -21,6 +21,8 @@ use thiserror::Error;
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct UtcTimeImpl;
+#[derive(Default, Serialize, Deserialize)]
+pub struct LocalTimeImpl;
 
 #[derive(Debug, Error, Clone, Copy)]
 #[error("'{0}' as a start date must not be in the future")]

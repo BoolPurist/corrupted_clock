@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Now paused time should be shown calculated correctly.
+- Start date now is treated as the local date time and not as a direct UTC
 
 ### Added
 

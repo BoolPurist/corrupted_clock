@@ -1,3 +1,4 @@
+use chrono::{Local, TimeZone, Utc};
 use clap::Args;
 use corrupted_clock_util::{
     parsed_date::{InvalidDateFormat, ParsedDate},
@@ -80,5 +81,7 @@ fn parse_start_date(s: &str) -> Result<UtcDateTime, InvalidStartDate> {
     let valid_date: ParsedDate = s.parse()?;
     let date: UtcDateTime = valid_date.into();
     validate_if_date_is_not_in_future(&UtcTimeImpl, date)?;
+    let as_local = Local.from_local_datetime(&date.naive_utc()).unwrap();
+    let date = Utc.from_local_datetime(&as_local.naive_utc()).unwrap();
     Ok(date)
 }
