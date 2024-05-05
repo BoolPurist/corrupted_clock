@@ -1,5 +1,11 @@
 use clap::Args;
-use corrupted_clock_util::timing::ClockDuration;
+use corrupted_clock_util::{
+    parsed_date::{InvalidDateFormat, ParsedDate},
+    timing::{
+        validate_if_date_is_not_in_future, ClockDuration, InvalidDateInFuture, UtcDateTime,
+        UtcTimeImpl,
+    },
+};
 
 #[derive(Debug, Args)]
 pub struct CreateCommand {
@@ -35,6 +41,25 @@ pub struct CreateCommand {
     ///
     /// 12
     to_count_down: Option<ClockDuration>,
+    #[arg(short, long ,value_parser = parse_start_date)]
+    /// Valid syntax: <year>-<month>-<day> <hours>:<minutes>:<seconds>
+    /// year: positive number
+    /// months: [0-1]?<1-9>
+    /// year: positive number
+    /// year: positive number
+    /// year: positive number
+    /// year: positive number
+    start_date: Option<UtcDateTime>,
+}
+
+use thiserror::Error;
+
+#[derive(Debug, Clone, Copy, Error)]
+pub enum InvalidStartDate {
+    #[error("{0}")]
+    InFuture(#[from] InvalidDateInFuture),
+    #[error("{0}")]
+    Invalid(#[from] InvalidDateFormat),
 }
 
 impl CreateCommand {
@@ -45,4 +70,15 @@ impl CreateCommand {
     pub fn to_count_down(&self) -> Option<ClockDuration> {
         self.to_count_down
     }
+
+    pub fn start_date(&self) -> Option<UtcDateTime> {
+        self.start_date
+    }
+}
+
+fn parse_start_date(s: &str) -> Result<UtcDateTime, InvalidStartDate> {
+    let valid_date: ParsedDate = s.parse()?;
+    let date: UtcDateTime = valid_date.into();
+    validate_if_date_is_not_in_future(&UtcTimeImpl, date)?;
+    Ok(date)
 }

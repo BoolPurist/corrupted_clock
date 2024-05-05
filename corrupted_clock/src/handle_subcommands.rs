@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use corrupted_clock_util::{
     data_store,
-    timing::{ClockTable, CountDown, Stopwatch, TimeImpl, Timer as _},
+    timing::{ClockTable, CountDown, Stopwatch, TimeImpl, Timer as _, UtcTimeImpl},
 };
 use log::{info, warn};
 
@@ -36,14 +36,25 @@ pub fn create(general_args: &AppCliArgs, args: &CreateCommand) -> AppResult {
             );
             name
         });
+    let opt_start_date = args.start_date();
     match args.to_count_down() {
         Some(count_down) => {
             info!("Stopwatch under the name '{}' is created", name);
-            app_state.add_count_down(name, CountDown::new(count_down))?;
+            let count_down = if let Some(start_date) = opt_start_date {
+                CountDown::new_with_start(count_down, start_date)?
+            } else {
+                CountDown::new(count_down)
+            };
+            app_state.add_count_down(name, count_down)?;
         }
         None => {
             info!("Count down under the name '{}' is created", name);
-            app_state.add_stopwatch(name, Stopwatch::new())?
+            let stopwatch = if let Some(start_date) = opt_start_date {
+                Stopwatch::new_with_impl_and_start_date(UtcTimeImpl, start_date)?
+            } else {
+                Stopwatch::new()
+            };
+            app_state.add_stopwatch(name, stopwatch)?
         }
     };
 

@@ -17,9 +17,26 @@ pub type UtcDateTime = DateTime<Utc>;
 pub type ChronoDuration = chrono::Duration;
 
 use chrono::{DateTime, Utc};
+use thiserror::Error;
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct UtcTimeImpl;
+
+#[derive(Debug, Error, Clone, Copy)]
+#[error("'{0}' as a start date must not be in the future")]
+pub struct InvalidDateInFuture(UtcDateTime);
+
+pub fn validate_if_date_is_not_in_future(
+    time: &impl TimeImpl,
+    to_check: UtcDateTime,
+) -> Result<(), InvalidDateInFuture> {
+    let now = time.now();
+    if now.timestamp() < to_check.timestamp() {
+        Err(InvalidDateInFuture(to_check))
+    } else {
+        Ok(())
+    }
+}
 
 pub trait Timer {
     fn created_at(&self) -> UtcDateTime;
@@ -36,6 +53,15 @@ pub trait Timer {
 
 pub trait TimeImpl {
     fn now(&self) -> UtcDateTime;
+}
+
+impl<'a, T> TimeImpl for &'a T
+where
+    T: TimeImpl,
+{
+    fn now(&self) -> UtcDateTime {
+        (*self).now()
+    }
 }
 
 impl TimeImpl for UtcTimeImpl {

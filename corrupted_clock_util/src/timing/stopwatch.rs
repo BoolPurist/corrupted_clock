@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use super::{ChronoDuration, ClockDuration, TimeImpl, Timer, UtcDateTime, UtcTimeImpl};
+use super::{
+    ChronoDuration, ClockDuration, InvalidDateInFuture, TimeImpl, Timer, UtcDateTime, UtcTimeImpl,
+};
 
 #[derive(Serialize, Deserialize)]
 pub struct Stopwatch<T = UtcTimeImpl>
@@ -22,7 +24,12 @@ impl Stopwatch<UtcTimeImpl> {
     pub fn new() -> Self {
         Self::new_with_impl(UtcTimeImpl::default())
     }
+
+    pub fn new_with_start_date(date: UtcDateTime) -> Result<Stopwatch, InvalidDateInFuture> {
+        Self::new_with_impl_and_start_date(UtcTimeImpl, date)
+    }
 }
+
 impl<T> Stopwatch<T>
 where
     T: TimeImpl + Default,
@@ -116,13 +123,17 @@ where
 {
     pub fn new_with_impl(time_impl: T) -> Self {
         let now = time_impl.now();
-        Self::new_with_impl_and_start_date(time_impl, now)
+        Self::new_with_impl_and_start_date(time_impl, now).unwrap()
     }
 
-    pub fn new_with_impl_and_start_date(time_impl: T, date: UtcDateTime) -> Self {
+    pub fn new_with_impl_and_start_date(
+        time_impl: T,
+        date: UtcDateTime,
+    ) -> Result<Self, InvalidDateInFuture> {
+        super::validate_if_date_is_not_in_future(&time_impl, date)?;
         let created_at = date;
         let paused_time = Default::default();
-        Self {
+        Ok(Self {
             created_at,
             start_moment: created_at,
             paused_time,
@@ -131,7 +142,7 @@ where
             is_paused: false,
             last_paused_at: None,
             last_resume_moment: None,
-        }
+        })
     }
 }
 

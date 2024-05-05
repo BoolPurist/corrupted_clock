@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use super::{ClockDuration, Stopwatch, TimeImpl, Timer, UtcTimeImpl};
+use super::{
+    ClockDuration, InvalidDateInFuture, Stopwatch, TimeImpl, Timer, UtcDateTime, UtcTimeImpl,
+};
 
 #[derive(Serialize, Deserialize)]
 pub struct CountDown<T = UtcTimeImpl>
@@ -28,6 +30,14 @@ impl CountDown {
         let stopwatch: Stopwatch = Stopwatch::new();
         Self { stopwatch, time }
     }
+
+    pub fn new_with_start(
+        time: ClockDuration,
+        start: UtcDateTime,
+    ) -> Result<Self, InvalidDateInFuture> {
+        let stopwatch: Stopwatch = Stopwatch::new_with_impl_and_start_date(UtcTimeImpl, start)?;
+        Ok(Self { stopwatch, time })
+    }
 }
 
 impl<T> CountDown<T>
@@ -37,6 +47,7 @@ where
     pub fn count_down_time(&self) -> ClockDuration {
         self.time
     }
+
     pub fn new_with_impl(time_impl: T, time: ClockDuration) -> Self {
         let stopwatch = Stopwatch::new_with_impl(time_impl);
         Self { stopwatch, time }

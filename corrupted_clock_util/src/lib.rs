@@ -2,6 +2,7 @@ use chrono::{DateTime, Datelike, Local, Timelike, Utc};
 
 pub mod constants;
 pub mod data_store;
+pub mod parsed_date;
 pub mod prelude;
 pub mod timing;
 

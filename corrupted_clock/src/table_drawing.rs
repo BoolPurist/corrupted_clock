@@ -1,6 +1,4 @@
-use corrupted_clock_util::timing::{
-    ClockDuration, CountDown, Stopwatch, TimeImpl, Timer, UtcDateTime,
-};
+use corrupted_clock_util::timing::{CountDown, Stopwatch, TimeImpl, Timer, UtcDateTime};
 use prettytable::{Cell, Row, Table};
 
 use crate::constants::NOT_AVIABLE_TXT;
