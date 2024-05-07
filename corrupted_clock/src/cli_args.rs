@@ -5,6 +5,7 @@ use clap::{Parser, Subcommand};
 
 mod clock_kind;
 mod clock_reference;
+mod column_show_arg;
 mod create_command;
 mod existing_clock_reference;
 mod get_clock_args;
@@ -13,6 +14,7 @@ mod many_clock_reference_kind;
 
 pub use clock_kind::{ClockKind, ClockKindArg};
 pub use clock_reference::ClockReference;
+pub use column_show_arg::ColumnShowArg;
 pub use create_command::CreateCommand;
 pub use existing_clock_reference::{ExistingClockKindReference, ExistingClockReference};
 pub use get_clock_args::GetClockArgs;

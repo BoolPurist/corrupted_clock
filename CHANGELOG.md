@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Showing started at, last paused at and last resumed at for stopwatch/count down in the table 
 - CLI argument within "create" subcommand. Allows to specify a start date of the stopwatch or count down
+- Option on subcommand "Get" and "List" to print rows with a maximum number of columns
 
 
 ### Added

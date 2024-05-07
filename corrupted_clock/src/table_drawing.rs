@@ -1,48 +1,88 @@
+use std::collections::VecDeque;
+
 use corrupted_clock_util::timing::{CountDown, Stopwatch, TimeImpl, Timer, UtcDateTime};
 use prettytable::{Cell, Row, Table};
 
-use crate::constants::NOT_AVIABLE_TXT;
+use crate::{constants::NOT_AVIABLE_TXT, listing_items_param::ListingItemsParams, AtLeastOne};
 
 pub fn count_down_rows<'a, T>(
+    list_args: ListingItemsParams,
     count_downs: impl IntoIterator<Item = (&'a str, &'a CountDown<T>)>,
-) -> Table
+) -> String
 where
     T: Default + TimeImpl + 'a,
 {
-    let count_downs = count_downs.into_iter();
-    let mut table = Table::new();
-    let header = stopwatch_header().chain(count_down_headers()).collect();
-    table.add_row(Row::new(header));
-    for name_count_down in count_downs {
-        let (_, cd) = name_count_down;
-        let row = stopwatch_fields(name_count_down).chain(count_down_fields(cd));
-        table.add_row(row.collect());
-    }
-    table
+    item_rows(
+        list_args,
+        count_downs,
+        || stopwatch_header().chain(count_down_headers()),
+        |name_stop_watch| {
+            stopwatch_fields((name_stop_watch.0, name_stop_watch.1.stopwatch()))
+                .chain(count_down_fields(name_stop_watch.1))
+        },
+    )
 }
 
 pub fn stop_watch_rows<'a, T>(
+    list_args: ListingItemsParams,
     count_downs: impl IntoIterator<Item = (&'a str, &'a Stopwatch<T>)>,
-) -> Table
+) -> String
 where
     T: Default + TimeImpl + 'a,
 {
+    item_rows(
+        list_args,
+        count_downs,
+        || stopwatch_header(),
+        |name_stop_watch| stopwatch_fields(name_stop_watch),
+    )
+}
+
+fn item_rows<'a, T: 'a, F, H>(
+    list_args: ListingItemsParams,
+    count_downs: impl IntoIterator<Item = (&'a str, &'a T)>,
+    on_headers: impl FnOnce() -> H,
+    on_fields: impl Fn((&str, &T)) -> F,
+) -> String
+where
+    F: Iterator<Item = String>,
+    H: Iterator<Item = Cell>,
+{
     type CellVec = Vec<Cell>;
-    let stop_watches = count_downs.into_iter();
+    let stop_watches: Vec<_> = count_downs.into_iter().collect();
 
-    let mut table = Table::new();
-    let headers: CellVec = stopwatch_header().collect();
+    let mut headers: VecDeque<Cell> = on_headers().collect();
     let elements_num = headers.len();
-    table.add_row(Row::new(headers));
+    let colum_steps = column_draw_steps(elements_num as u32, list_args.column_num());
+    let mut tables: Vec<Table> = std::iter::repeat(Table::new())
+        .take(colum_steps.len())
+        .collect();
 
-    for name_stop_watch in stop_watches {
-        let fields: CellVec = stopwatch_fields(name_stop_watch)
-            .map(|e| Cell::new(&e))
-            .collect();
-        debug_assert_eq!(elements_num, fields.len());
-        table.add_row(fields.into());
+    for (i, next) in tables.iter_mut().enumerate() {
+        let split_off_at = *colum_steps.get(i).unwrap() as usize;
+        let next_slice = headers.drain(0..split_off_at).collect();
+        next.add_row(Row::new(next_slice));
     }
-    table
+
+    let mut accum_for_skip = 0u32;
+    for (table, column_num) in tables.iter_mut().zip(colum_steps.into_iter()) {
+        for name_stop_watch in stop_watches.iter() {
+            let fields: CellVec = on_fields(*name_stop_watch)
+                .into_iter()
+                .skip(accum_for_skip as usize)
+                .take(column_num as usize)
+                .map(|e| Cell::new(&e))
+                .collect();
+            table.add_row(fields.into());
+        }
+        accum_for_skip += column_num;
+    }
+
+    tables
+        .into_iter()
+        .map(|table| table.to_string())
+        .collect::<Vec<String>>()
+        .join("\n")
 }
 
 fn stopwatch_header() -> impl Iterator<Item = Cell> {
@@ -103,4 +143,48 @@ where
     T: Default + TimeImpl,
 {
     [cd.count_down_time().to_string(), cd.left_time().to_string()].into_iter()
+}
+
+fn column_draw_steps(colum_num: u32, opt_column_num_per_row: Option<AtLeastOne>) -> Vec<u32> {
+    match opt_column_num_per_row {
+        None => std::iter::once(colum_num).collect(),
+        Some(per_row) => {
+            let num_per_row = per_row.value();
+            if num_per_row >= colum_num {
+                std::iter::once(colum_num).collect()
+            } else {
+                let module_column: u32 = colum_num % num_per_row;
+                let div_column: u32 = colum_num / num_per_row;
+                let rows = std::iter::repeat(num_per_row).take(div_column as usize);
+                if module_column == 0 {
+                    rows.collect()
+                } else {
+                    rows.chain(std::iter::once(module_column)).collect()
+                }
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod testing {
+    use super::*;
+
+    #[test]
+    fn colum_draw_steps_more_per_row_than_columns() {
+        let actual = column_draw_steps(2, Some(AtLeastOne::new(4).unwrap()));
+        insta::assert_debug_snapshot!(actual);
+    }
+
+    #[test]
+    fn colum_draw_steps_more_columns_than_per_row_even() {
+        let actual = column_draw_steps(8, Some(AtLeastOne::new(4).unwrap()));
+        insta::assert_debug_snapshot!(actual);
+    }
+
+    #[test]
+    fn colum_draw_steps_more_columns_than_per_row_uneven() {
+        let actual = column_draw_steps(10, Some(AtLeastOne::new(4).unwrap()));
+        insta::assert_debug_snapshot!(actual);
+    }
 }

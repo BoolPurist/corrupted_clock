@@ -1,0 +1,9 @@
+---
+source: corrupted_clock/src/table_drawing.rs
+expression: actual
+---
+[
+    4,
+    4,
+    2,
+]

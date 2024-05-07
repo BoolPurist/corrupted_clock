@@ -13,6 +13,7 @@ use crate::{
         AppCliArgs, ClockKind, CreateCommand, ExistingClockKindReference, GetClockArgs, ListArgs,
         ManyClockReferenceKind,
     },
+    listing_items_param::ListingItemsParams,
     path_utils, table_drawing, AppResult,
 };
 
@@ -126,7 +127,7 @@ pub fn delete(general_args: &AppCliArgs, args: ExistingClockKindReference) -> Ap
 pub fn list(general_args: &AppCliArgs, args: &ListArgs) -> AppResult<String> {
     let LoadedAppStateFile { app_state, .. } = load_app_state(general_args)?;
 
-    let output = draw_tables_of_cds_sws(&app_state, args.kind());
+    let output = draw_tables_of_cds_sws(&app_state, args.kind(), args.into());
     Ok(output)
 }
 
@@ -139,14 +140,16 @@ pub fn get_clock(general_args: &AppCliArgs, args: &GetClockArgs) -> AppResult<St
             let count_down = app_state
                 .get_count_down(name)
                 .ok_or_else(|| NotFoundClockErr::new(name.to_owned(), ClockKind::CountDown))?;
-            let table = table_drawing::count_down_rows([(name, count_down)].into_iter());
+            let table =
+                table_drawing::count_down_rows(args.into(), [(name, count_down)].into_iter());
             Ok(table.to_string())
         }
         ClockKind::StopWatch => {
             let stop_watch = app_state
                 .get_stopwatch(name)
                 .ok_or_else(|| NotFoundClockErr::new(name.to_owned(), ClockKind::StopWatch))?;
-            let table = table_drawing::stop_watch_rows([(name, stop_watch)].into_iter());
+            let table =
+                table_drawing::stop_watch_rows(args.into(), [(name, stop_watch)].into_iter());
             Ok(table.to_string())
         }
     }
@@ -238,7 +241,11 @@ fn handle_modify_with_save(
     Ok(())
 }
 
-fn draw_tables_of_cds_sws<T>(app_state: &ClockTable<T>, clock_kind: Option<ClockKind>) -> String
+fn draw_tables_of_cds_sws<T>(
+    app_state: &ClockTable<T>,
+    clock_kind: Option<ClockKind>,
+    list_params: ListingItemsParams,
+) -> String
 where
     T: Default + TimeImpl,
 {
@@ -255,7 +262,8 @@ where
             to_sort.sort_by(|(l_key, _), (r_key, _)| l_key.cmp(&r_key));
             to_sort
         };
-        let sw_table = table_drawing::stop_watch_rows(stop_watches).to_string();
+        let sw_table =
+            table_drawing::stop_watch_rows(list_params.clone(), stop_watches).to_string();
         let to_push = format!(
             "Stopwatches\n\
             {}\n",
@@ -269,7 +277,7 @@ where
             to_sort.sort_by(|(l_key, _), (r_key, _)| l_key.cmp(&r_key));
             to_sort
         };
-        let cd_table = table_drawing::count_down_rows(count_downs).to_string();
+        let cd_table = table_drawing::count_down_rows(list_params, count_downs).to_string();
         let to_push = format!(
             "Countdowns\n\
             {}\n",
@@ -299,7 +307,7 @@ mod testing {
             clock_kind: Option<ClockKind>,
             input: ClockTable<MockTimeImpl>,
         ) {
-            let actual = draw_tables_of_cds_sws(&input, clock_kind);
+            let actual = draw_tables_of_cds_sws(&input, clock_kind, Default::default());
             insta::assert_snapshot!(case_name, actual);
         }
 
