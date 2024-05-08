@@ -48,7 +48,6 @@ where
     F: Iterator<Item = String>,
     H: Iterator<Item = Cell>,
 {
-    type CellVec = Vec<Cell>;
     let stop_watches: Vec<_> = count_downs.into_iter().collect();
 
     let mut headers: VecDeque<Cell> = on_headers().collect();
@@ -58,29 +57,23 @@ where
         .take(colum_steps.len())
         .collect();
 
-    for (i, next) in tables.iter_mut().enumerate() {
-        let split_off_at = *colum_steps.get(i).unwrap() as usize;
-        let next_slice = headers.drain(0..split_off_at).collect();
-        next.add_row(Row::new(next_slice));
+    for (next, &split_off_at) in tables.iter_mut().zip(colum_steps.iter()) {
+        let split_off_at = split_off_at as usize;
+        let next_slice = headers.drain(0..split_off_at);
+        next.add_row(Row::from_iter(next_slice));
     }
 
-    let mut accum_for_skip = 0u32;
-    for (table, column_num) in tables.iter_mut().zip(colum_steps.into_iter()) {
-        for name_stop_watch in stop_watches.iter() {
-            let fields: CellVec = on_fields(*name_stop_watch)
-                .into_iter()
-                .skip(accum_for_skip as usize)
-                .take(column_num as usize)
-                .map(|e| Cell::new(&e))
-                .collect();
-            table.add_row(fields.into());
+    for name_stop_watch in stop_watches {
+        let mut fields = on_fields(name_stop_watch).map(|e| Cell::new(&e));
+        for (table, &column_num) in tables.iter_mut().zip(colum_steps.iter()) {
+            let for_row = fields.by_ref().take(column_num as usize);
+            table.add_row(Row::from_iter(for_row));
         }
-        accum_for_skip += column_num;
     }
 
     tables
-        .into_iter()
-        .map(|table| table.to_string())
+        .iter()
+        .map(ToString::to_string)
         .collect::<Vec<String>>()
         .join("\n")
 }
